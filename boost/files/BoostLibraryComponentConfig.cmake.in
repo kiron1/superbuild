@@ -1,0 +1,31 @@
+#=============================================================================
+# Distributed under the Boost Software License, Version 1.0.
+# See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt
+#=============================================================================
+
+@PACKAGE_INIT@
+
+
+set_and_check(BOOST_ROOT "${PACKAGE_PREFIX_DIR}")
+set_and_check(BOOST_INCLUDEDIR "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
+set_and_check(BOOST_LIBRARYDIR "@PACKAGE_CMAKE_INSTALL_LIBDIR@")
+
+find_library(_@COMPONENT@_lib
+  NAMES boost_@COMPONENT@
+  PATHS ${BOOST_LIBRARYDIR}
+)
+
+if(NOT _@COMPONENT@_lib)
+  set(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE
+    "${CMAKE_FIND_PACKAGE_NAME} could not find library @COMPONENT@.")
+  set(${CMAKE_FIND_PACKAGE_NAME}_FOUND False)
+endif()
+
+add_library(boost::@COMPONENT@ INTERFACE IMPORTED)
+set_target_properties(boost::@COMPONENT@
+  PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDEDIR}"
+    INTERFACE_LINK_LIBRARIES "${_@COMPONENT@_lib}"
+)
+
