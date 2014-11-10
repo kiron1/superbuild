@@ -168,7 +168,7 @@ install(PROGRAMS ${_b2_exe}
   DESTINATION ${CMAKE_INSTALL_BINDIR}
   COMPONENT "${PACKAGE_NAME}-build"
 )
-install(DIRECTORY ${_boost_build_path}
+install(DIRECTORY ${_boost_build_path}/
   DESTINATION ${CMAKE_INSTALL_DATADIR}/${PACKAGE_NAME}/build
   COMPONENT "${PACKAGE_NAME}-build"
 )
