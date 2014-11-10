@@ -75,6 +75,7 @@ else()
 endif()
 
 set(_stage_args
+  --build-dir=${_boost_bin}
   toolset=${${PROJECT_NAME}_BUILD_TOOSET}
   ${${PROJECT_NAME}_BUILD_FLAGS}
 )
