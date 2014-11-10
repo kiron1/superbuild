@@ -71,6 +71,7 @@ endfunction()
 add_subdirectory(catch)
 add_subdirectory(boost)
 add_subdirectory(boost-qvm)
+add_subdirectory(urdl)
 add_subdirectory(adobe)
 add_subdirectory(parallelstl)
 
