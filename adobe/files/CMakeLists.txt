@@ -22,8 +22,7 @@ include(GNUInstallDirs)
 option(${PROJECT_NAME}_HEAD_ONLY "Do not build library, use header only part" Yes)
 
 set(_config_cmake_in      "${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}Config.cmake.in")
-set(_export_config_cmake  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake")
-set(_install_config_cmake "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${PROJECT_NAME}Config.cmake")
+set(_config_cmake         "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake")
 set(_config_version_cmake "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake")
 set(_targets_cmake        "${PROJECT_NAME}Targets.cmake")
 set(_pkg_dest             "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/cmake")
@@ -104,7 +103,7 @@ install(TARGETS source_libraries EXPORT "${PROJECT_NAME}"
   RUNTIME       DESTINATION ${CMAKE_INSTALL_BINDIR}     COMPONENT "${PROJECT_NAME}"
   LIBRARY       DESTINATION ${CMAKE_INSTALL_LIBDIR}     COMPONENT "${PROJECT_NAME}"
   ARCHIVE       DESTINATION ${CMAKE_INSTALL_LIBDIR}     COMPONENT "${PROJECT_NAME}-dev"
-  INCLUDES      DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT "${PROJECT_NAME}-dev"
+  INCLUDES      DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 install(EXPORT "${PROJECT_NAME}"
   NAMESPACE "adobe::"
@@ -126,25 +125,14 @@ write_basic_package_version_file(
 )
 configure_package_config_file(
   "${_config_cmake_in}"
-  "${_install_config_cmake}"
+  "${_config_cmake}"
   INSTALL_DESTINATION "${_pkg_dest}"
   NO_CHECK_REQUIRED_COMPONENTS_MACRO
   PATH_VARS CMAKE_INSTALL_INCLUDEDIR
 )
-install(FILES "${_install_config_cmake}" "${_config_version_cmake}"
+install(FILES
+  "${_config_cmake}"
+  "${_config_version_cmake}"
   DESTINATION "${_pkg_dest}"
 )
-
-configure_package_config_file(
-  "${_config_cmake_in}"
-  "${_export_config_cmake}"
-  INSTALL_DESTINATION "${_export_config_cmake}"
-  NO_CHECK_REQUIRED_COMPONENTS_MACRO
-  PATH_VARS CMAKE_INSTALL_INCLUDEDIR
-)
-export(EXPORT "${PROJECT_NAME}"
-  NAMESPACE "adobe::"
-  FILE "${_targets_cmake}"
-)
-export(PACKAGE ${PROJECT_NAME})
 
