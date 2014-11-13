@@ -22,11 +22,6 @@ set(${PROJECT_NAME}_INIT_CACHE_FILE ""
   CACHE FILE "CMake init-cache file used for all external projects"
 )
 
-set(RAPTOR_REPOSITORY_BASE
-  "https://github.com/kiron1"
-  CACHE STRING "Raptor components repository base URI"
-)
-
 set_property(DIRECTORY
   PROPERTY EP_PREFIX "${${PROJECT_NAME}_PREFIX}"
 )
@@ -74,4 +69,7 @@ add_subdirectory(boost-qvm)
 add_subdirectory(urdl)
 add_subdirectory(adobe)
 add_subdirectory(parallelstl)
+
+add_subdirectory(cube)
+add_subdirectory(raptor)
 
