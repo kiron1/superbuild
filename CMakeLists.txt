@@ -69,6 +69,7 @@ add_subdirectory(boost-qvm)
 add_subdirectory(urdl)
 add_subdirectory(adobe)
 add_subdirectory(parallelstl)
+add_subdirectory(lua)
 
 add_subdirectory(cube)
 add_subdirectory(raptor)
