@@ -11,11 +11,11 @@ cmake_policy(VERSION 3.0)
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
+project(AdobeSourceLibraries VERSION 0.1.0 LANGUAGES CXX)
+
 find_package(BoostFilesystem QUIET)
 find_package(BoostSystem QUIET)
 find_package(BoostThread QUIET)
-
-project(AdobeSourceLibraries VERSION 0.1.0 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 
