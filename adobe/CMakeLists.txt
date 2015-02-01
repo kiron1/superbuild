@@ -8,6 +8,9 @@ ExternalProject_Add(adobe-source-libraries
   DEPENDS boost
   GIT_REPOSITORY "https://github.com/stlab/adobe_source_libraries"
   GIT_TAG "3d845219da423f7278bbef07b0ccc0322cd17304"
+  CMAKE_GENERATOR ${CMAKE_GENERATOR}
+  CMAKE_GENERATOR_PLATFORM ${CMAKE_GENERATOR_PLATFORM}
+  CMAKE_GENERATOR_TOOLSET ${CMAKE_GENERATOR_TOOLSET}
   CMAKE_ARGS ${_cmake_args}
   TEST_COMMAND ""
 )

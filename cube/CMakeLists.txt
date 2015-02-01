@@ -9,6 +9,9 @@ ExternalProject_Add(cube
   DEPENDS         boost
   GIT_REPOSITORY  https://github.com/kiron1/cube
   GIT_TAG         master
+  CMAKE_GENERATOR ${CMAKE_GENERATOR}
+  CMAKE_GENERATOR_PLATFORM ${CMAKE_GENERATOR_PLATFORM}
+  CMAKE_GENERATOR_TOOLSET ${CMAKE_GENERATOR_TOOLSET}
   CMAKE_ARGS      ${_cmake_args}
   TEST_COMMAND    ""
 )

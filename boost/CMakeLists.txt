@@ -17,11 +17,15 @@ set(_boost_sha1_1_57_0 "55366a96bb76440ab140047065650f1d73dbfd8c")
 ExternalProject_Add(boost
   URL "http://downloads.sourceforge.net/project/boost/boost/${_boost_version}/boost_${_boost_version_us}.tar.gz"
   URL_HASH SHA1=${_boost_sha1_${_boost_version_us}}
-  CMAKE_ARGS ${_cmake_args} -DBoost_WITH_LIBRARIES=filesystem,program_options,system,test -DBoost_VERSION=${_boost_version}
+  CMAKE_GENERATOR ${CMAKE_GENERATOR}
+  CMAKE_GENERATOR_PLATFORM ${CMAKE_GENERATOR_PLATFORM}
+  CMAKE_GENERATOR_TOOLSET ${CMAKE_GENERATOR_TOOLSET}
+  CMAKE_ARGS ${_cmake_args} -DBoost_WITH_LIBRARIES=filesystem,program_options,system,test
   TEST_COMMAND ""
 )
 copy_files(boost
   CMakeLists.txt
   BoostLibraryComponentConfig.cmake.in
-  BoostComponentConfig.cmake.in
+  BoostHeaderOnlyComponentConfig.cmake.in
+  project-config.jam.in
 )

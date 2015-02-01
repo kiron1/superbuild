@@ -35,16 +35,25 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES HP)
   set(_toolset hp_cxx)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES SunPro)
   set(_toolset sun)
-else() # msvc, intel, borland
+elseif(CMAKE_CXX_COMPILER_ID MATCHES MSVC)
+  if(CMAKE_GENERATOR MATCHES "^Visual Studio ([0-9]+).*")
+    set(_toolset "msvc-${CMAKE_MATCH_1}.0")
+  else()
+    string(TOLOWER "${CMAKE_CXX_COMPILER_ID}" _toolset)
+  endif()
+else() # intel, borland
   string(TOLOWER "${CMAKE_CXX_COMPILER_ID}" _toolset)
 endif()
 
 set(${PROJECT_NAME}_WITH_LIBRARIES "" CACHE STRING "Comma seperated list of libraries to build")
 set(${PROJECT_NAME}_BUILD_FLAGS "${_build_flags}" CACHE STRING "Extra arguments for b2 when building Boost")
-set(${PROJECT_NAME}_BUILD_TOOSET ${_toolset} CACHE STRING "Toolset to use when building Boost")
-set_property(CACHE ${PROJECT_NAME}_BUILD_TOOSET PROPERTY STRINGS
+set(${PROJECT_NAME}_BUILD_TOOLSET ${_toolset} CACHE STRING "Toolset to use when building Boost")
+set_property(CACHE ${PROJECT_NAME}_BUILD_TOOLSET PROPERTY STRINGS
   acc borland como darwin gcc hp_cxx intel msvc sun vacpp
 )
+set(${PROJECT_NAME}_WITH_BOOST_BUILD No CACHE STRING "Install Boost.Build")
+
+set(CMAKE_INSTALL_MESSAGE "LAZY")
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
   set(_b2_configure "${_boost_src}/bootstrap.bat")
@@ -58,11 +67,35 @@ set(_boost_build_path "${_boost_src}/tools/build")
 set(ENV{BOOST_BUILD_PATH} "${_boost_build_path}")
 set(ENV{BOOST_ROOT} "${_boost_src}")
 
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/project-config.jam.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/project-config.jam"
+  @ONLY
+)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  # overwrite the project-config.jam file generate by the bootstrap script with
+  # our own version which contains the exact same compiler path as used by
+  # CMake
+  list(APPEND _b2_configure
+    COMMAND ${CMAKE_COMMAND} -E copy
+    "${CMAKE_CURRENT_BINARY_DIR}/project-config.jam"
+    "${CMAKE_CURRENT_SOURCE_DIR}/project-config.jam"
+  )
+else()
+  # Delete the generate project-config.jam file, since we use the toolset argument
+  list(APPEND _b2_configure
+    COMMAND ${CMAKE_COMMAND} -E remove
+    "${CMAKE_CURRENT_SOURCE_DIR}/project-config.jam"
+  )
+endif()
+
 add_custom_command(
   OUTPUT ${_b2_exe}
   COMMAND ${_b2_configure}
   WORKING_DIRECTORY ${_boost_src}
 )
+
 add_custom_target(bootstrap ALL
   DEPENDS ${_b2_exe}
   COMMENT "Bootstrap Boost.Build..."
@@ -75,21 +108,19 @@ else()
 endif()
 
 set(_stage_args
+  -d2
   --build-dir=${_boost_bin}
-  toolset=${${PROJECT_NAME}_BUILD_TOOSET}
+  toolset=${${PROJECT_NAME}_BUILD_TOOLSET}
   ${${PROJECT_NAME}_BUILD_FLAGS}
 )
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  list(APPEND _stage_args address-model=64)
+endif()
 foreach(_lib IN LISTS _with_libraries)
   list(APPEND _stage_args --with-${_lib})
 endforeach()
 
-add_custom_target(stage ALL
-  DEPENDS bootstrap
-  COMMAND "${_b2_exe}" ${_stage_args} stage
-  WORKING_DIRECTORY ${_boost_src}
-)
-
-function(write_boost_config _camel_comp _snake_comp _library)
+function(write_boost_config _camel_comp _snake_comp _type)
   include(CMakePackageConfigHelpers)
   set(_name                 "Boost${_camel_comp}")
   set(_export_config_cmake  "${CMAKE_CURRENT_BINARY_DIR}/${_name}Config.cmake")
@@ -99,11 +130,7 @@ function(write_boost_config _camel_comp _snake_comp _library)
 
   set(COMPONENT "${_snake_comp}")
   set(COMPONENT_DEPENDENCIES "Boost")
-  if(_library)
-    set(_config_cmake_in "BoostLibraryComponentConfig.cmake.in")
-  else()
-    set(_config_cmake_in "BoostComponentConfig.cmake.in")
-  endif()
+  set(_config_cmake_in "Boost${_type}ComponentConfig.cmake.in")
 
   configure_package_config_file(
     "${_config_cmake_in}"
@@ -146,16 +173,22 @@ function(write_boost_config _camel_comp _snake_comp _library)
   )
 endfunction()
 
-write_boost_config(Array             array               NO)
-write_boost_config(Filesystem        filesystem          YES)
-write_boost_config(Io                io                  NO)
-write_boost_config(ProgramOptions    program_options     YES)
-write_boost_config(Range             range               NO)
-write_boost_config(SmartPtr          smart_ptr           NO)
-write_boost_config(Spirit            spirit              NO)
-write_boost_config(System            system              YES)
-write_boost_config(UnitTestFramework unit_test_framework YES)
-write_boost_config(Variant           variant             NO)
+write_boost_config(Array             array               HeaderOnly)
+write_boost_config(Filesystem        filesystem          Library)
+write_boost_config(Io                io                  HeaderOnly)
+write_boost_config(ProgramOptions    program_options     Library)
+write_boost_config(Range             range               HeaderOnly)
+write_boost_config(SmartPtr          smart_ptr           HeaderOnly)
+write_boost_config(Spirit            spirit              HeaderOnly)
+write_boost_config(System            system              Library)
+write_boost_config(UnitTestFramework unit_test_framework Library)
+write_boost_config(Variant           variant             HeaderOnly)
+
+add_custom_target(stage ALL
+  DEPENDS bootstrap
+  COMMAND "${_b2_exe}" ${_stage_args} stage
+  WORKING_DIRECTORY ${_boost_src}
+)
 
 install(DIRECTORY boost
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
@@ -165,12 +198,14 @@ install(DIRECTORY stage/lib/
   DESTINATION ${CMAKE_INSTALL_LIBDIR}
   COMPONENT "${PACKAGE_NAME}-dev"
 )
-install(PROGRAMS ${_b2_exe}
-  DESTINATION ${CMAKE_INSTALL_BINDIR}
-  COMPONENT "${PACKAGE_NAME}-build"
-)
-install(DIRECTORY ${_boost_build_path}/
-  DESTINATION ${CMAKE_INSTALL_DATADIR}/${PACKAGE_NAME}/build
-  COMPONENT "${PACKAGE_NAME}-build"
-)
+if(${PROJECT_NAME}_WITH_BOOST_BUILD)
+  install(PROGRAMS ${_b2_exe}
+    DESTINATION ${CMAKE_INSTALL_BINDIR}
+    COMPONENT "${PACKAGE_NAME}-build"
+  )
+  install(DIRECTORY ${_boost_build_path}/
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/${PACKAGE_NAME}/build
+    COMPONENT "${PACKAGE_NAME}-build"
+  )
+endif()
 
