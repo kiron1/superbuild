@@ -11,7 +11,9 @@ cmake_policy(VERSION 3.0)
 set(CMAKE_DISABLE_SOURCE_CHANGES On)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD On)
 
-project(Superbuild NONE)
+project(Superbuild C CXX)
+
+find_package(Git MODULE QUIET REQUIRED)
 
 include(ExternalProject)
 
@@ -27,11 +29,13 @@ set_property(DIRECTORY
 )
 
 set(_cmake_args
-  -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
-  -DCMAKE_PREFIX_PATH=${${PROJECT_NAME}_PREFIX}
-  -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=Yes
-  -DCMAKE_FIND_PACKAGE_NO_SYSTEM_PACKAGE_REGISTRY=Yes
-  -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=Yes
+  "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+  "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+  "-DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>"
+  "-DCMAKE_PREFIX_PATH=${${PROJECT_NAME}_PREFIX}"
+  "-DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=Yes"
+  "-DCMAKE_FIND_PACKAGE_NO_SYSTEM_PACKAGE_REGISTRY=Yes"
+  "-DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=Yes"
 )
 
 if(${PROJECT_NAME}_INIT_CACHE_FILE)
@@ -44,6 +48,8 @@ if(${PROJECT_NAME}_INIT_CACHE_FILE)
     message(SEND_ERROR "init-cache-file `${_init_cache}' does not exists!")
   endif()
 endif()
+
+configure_file("init-cache.cmake.in" "init-cache.cmake" @ONLY)
 
 function(copy_files _name)
   set(_cmd)

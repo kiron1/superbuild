@@ -1,0 +1,266 @@
+diff --git a/AdobeSourceLibrariesConfig.cmake.in b/AdobeSourceLibrariesConfig.cmake.in
+new file mode 100644
+index 0000000..965e42b
+--- /dev/null
++++ b/AdobeSourceLibrariesConfig.cmake.in
+@@ -0,0 +1,9 @@
++#=============================================================================
++# Distributed under the Boost Software License, Version 1.0.
++# See accompanying file LICENSE_1_0.txt or copy at
++# http://www.boost.org/LICENSE_1_0.txt
++#=============================================================================
++
++@PACKAGE_INIT@
++
++include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+new file mode 100644
+index 0000000..2c83559
+--- /dev/null
++++ b/CMakeLists.txt
+@@ -0,0 +1,104 @@
++#=============================================================================
++# Distributed under the Boost Software License, Version 1.0.
++# See accompanying file LICENSE_1_0.txt or copy at
++# http://www.boost.org/LICENSE_1_0.txt
++#=============================================================================
++
++cmake_minimum_required(VERSION 2.8.10 FATAL_ERROR)
++cmake_policy(VERSION 2.8.10)
++
++set(CMAKE_DISABLE_SOURCE_CHANGES ON)
++set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
++set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin")
++set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
++set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
++set_property(GLOBAL PROPERTY USE_FOLDERS 1)
++
++project(AdobeSourceLibraries CXX)
++
++file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/adobe/config.hpp" _adobe_config_hpp REGEX "#define ADOBE_VERSION_(MAJOR|MINOR|SUBMINOR) ")
++set(AdobeSourceLibraries_VERSION)
++foreach(_part IN ITEMS MAJOR MINOR SUBMINOR)
++  if(_adobe_config_hpp MATCHES "#define ADOBE_VERSION_${_part}[ \\t]+([0-9]+)")
++    set(AdobeSourceLibraries_VERSION "${AdobeSourceLibraries_VERSION}${CMAKE_MATCH_1}.")
++  endif()
++endforeach()
++set(AdobeSourceLibraries_VERSION "${AdobeSourceLibraries_VERSION}0")
++unset(_adobe_config_hpp)
++
++
++option(BUILD_TESTING "Build the testing tree." On)
++option(BUILD_EXAMPLES "Build the examples." On)
++
++find_package(Boost 1.56 QUIET MODULE REQUIRED
++  COMPONENTS filesystem system thread
++  OPTIONAL_COMPONENTS unit_test_framework
++)
++find_package(double-conversion 1.1.1 QUIET CONFIG REQUIRED)
++find_package(Doxygen QUIET MODULE)
++
++find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format)
++
++include(CheckCXXCompilerFlag)
++include(CMakePackageConfigHelpers)
++include(GNUInstallDirs)
++
++if(BUILD_TESTING)
++  enable_testing()
++endif()
++
++if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
++  set(HAVE_CXX11 Yes)
++elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
++  check_cxx_compiler_flag("-std=c++11" HAVE_CXX11)
++endif()
++if(NOT HAVE_CXX11)
++  message(SEND_ERROR "The compiler ${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION} does not support C++11.")
++endif()
++
++if(BUILD_TESTING AND NOT Boost_UNIT_TEST_FRAMEWORK_FOUND)
++  message(SEND_ERROR "BUILD_TESTING is `${BUILD_TESTING}', but boost_unit_test_framework is not found. Append -DBUILD_TESTING=No to disable tests")
++endif()
++
++add_subdirectory(source)
++add_subdirectory(documentation)
++
++if(CLANG_FORMAT_EXECUTABLE)
++  file(GLOB_RECURSE _clang_format_files
++    "${PROJECT_SOURCE_DIR}/adobe/*.hpp"
++    "${PROJECT_SOURCE_DIR}/source/*.[ch]pp"
++    "${PROJECT_SOURCE_DIR}/test/*.[ch]pp"
++  )
++  list(REMOVE_ITEM _clang_format_files "${PROJECT_SOURCE_DIR}/test/sha/shavs.cpp")
++  add_custom_target(clang-format
++    COMMAND  ${CLANG_FORMAT_EXECUTABLE} -style=FILE -i ${_clang_format_files}
++    WORKING_DIRECTORY"${PROJECT_SOURCE_DIR}"
++  )
++endif()
++
++install(DIRECTORY adobe
++  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
++  COMPONENT   "${PROJECT_NAME}-dev"
++)
++
++set(_config_cmake_in      "${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}Config.cmake.in")
++set(_config_cmake         "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake")
++set(_config_version_cmake "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake")
++
++write_basic_package_version_file(
++  "${_config_version_cmake}"
++  VERSION "${AdobeSourceLibraries_VERSION}"
++  COMPATIBILITY AnyNewerVersion
++)
++configure_package_config_file(
++  "${_config_cmake_in}"
++  "${_config_cmake}"
++  INSTALL_DESTINATION "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/cmake"
++  NO_CHECK_REQUIRED_COMPONENTS_MACRO
++  PATH_VARS CMAKE_INSTALL_INCLUDEDIR
++)
++install(FILES
++  "${_config_cmake}"
++  "${_config_version_cmake}"
++  DESTINATION "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/cmake"
++)
+diff --git a/adobe/json.hpp b/adobe/json.hpp
+index ad42d0a..93e0df8 100644
+--- a/adobe/json.hpp
++++ b/adobe/json.hpp
+@@ -18,7 +18,7 @@
+ #include <unordered_map>
+ #include <vector>
+ 
+-#include <double-conversion/src/double-conversion.h>
++#include <double-conversion/double-conversion.h>
+ 
+ #include <adobe/cassert.hpp>
+ #include <adobe/string/to_string.hpp>
+diff --git a/documentation/CMakeLists.txt b/documentation/CMakeLists.txt
+new file mode 100644
+index 0000000..b3a0a4d
+--- /dev/null
++++ b/documentation/CMakeLists.txt
+@@ -0,0 +1,12 @@
++#=============================================================================
++# Distributed under the Boost Software License, Version 1.0.
++# See accompanying file LICENSE_1_0.txt or copy at
++# http://www.boost.org/LICENSE_1_0.txt
++#=============================================================================
++
++if(DOXYGEN_EXECUTABLE)
++  add_custom_target(documentation
++    COMMAND ${DOXYGEN_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/doxyfile"
++    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
++  )
++endif()
+diff --git a/source/CMakeLists.txt b/source/CMakeLists.txt
+new file mode 100644
+index 0000000..1ba2532
+--- /dev/null
++++ b/source/CMakeLists.txt
+@@ -0,0 +1,91 @@
++#=============================================================================
++# Distributed under the Boost Software License, Version 1.0.
++# See accompanying file LICENSE_1_0.txt or copy at
++# http://www.boost.org/LICENSE_1_0.txt
++#=============================================================================
++
++file(GLOB_RECURSE _adobe_headers "${PROJECT_SOURCE_DIR}/adobe/*.hpp")
++add_library(asl
++  ${_adobe_headers}
++  adam.cpp
++  adam_evaluate.cpp
++  adam_parser.cpp
++  any_regular.cpp
++  empty.cpp
++  eve.cpp
++  eve_evaluate.cpp
++  eve_parser.cpp
++  expression_filter.cpp
++  expression_parser.cpp
++  extents.cpp
++  external_model.cpp
++  future.cpp
++  iomanip_asl_cel.cpp
++  iomanip.cpp
++  iomanip_javascript.cpp
++  iomanip_pdf.cpp
++  iomanip_xml.cpp
++  istream.cpp
++  lex_shared.cpp
++  lex_stream.cpp
++  localization.cpp
++  md5.cpp
++  memory.cpp
++  name.cpp
++  parser_shared.cpp
++  string.cpp
++  string_pool.cpp
++  test_configuration.cpp
++  thread_id.cpp
++  token.cpp
++  typeinfo.cpp
++  unicode.cpp
++  virtual_machine.cpp
++  xml_lex.cpp
++  xml_parser.cpp
++  xml_token.cpp
++  xstring.cpp
++  zuid.cpp
++  zuid_sys_dep.cpp
++  zuid_uuid.cpp
++)
++add_library(adobe::asl ALIAS asl)
++target_include_directories(asl
++  PUBLIC
++    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
++    $<INSTALL_INTERFACE:include>
++    ${Boost_INCLUDE_DIRS}
++  PRIVATE
++    ${CMAKE_CURRENT_SOURCE_DIR}
++)
++target_compile_definitions(asl PUBLIC
++  ADOBE_SERIALIZATION
++  ADOBE_STD_SERIALIZATION
++  BOOST_ALL_NO_LIB
++  $<$<OR:$<PLATFORM_ID:Windows>,$<PLATFORM_ID:CYGWIN>>:WINVER=0x560>
++  $<$<OR:$<PLATFORM_ID:Windows>,$<PLATFORM_ID:CYGWIN>>:_WIN32_WINNT=0x560>
++  $<$<OR:$<PLATFORM_ID:Windows>,$<PLATFORM_ID:CYGWIN>>:_WIN32_IE=0x560>
++)
++target_compile_options(asl PUBLIC
++  $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:Clang>>:-std=c++11>
++  $<$<CXX_COMPILER_ID:Clang>:-stdlib=libc++>
++)
++target_link_libraries(asl PUBLIC
++  $<$<CXX_COMPILER_ID:Clang>:c++>
++  double-conversion
++  ${Boost_FILESYSTEM_LIBRARY}
++  ${Boost_SYSTEM_LIBRARY}
++  ${Boost_THREAD_LIBRARY}
++)
++install(TARGETS asl EXPORT "${PROJECT_NAME}"
++  RUNTIME       DESTINATION ${CMAKE_INSTALL_BINDIR}     COMPONENT "${PROJECT_NAME}"
++  LIBRARY       DESTINATION ${CMAKE_INSTALL_LIBDIR}     COMPONENT "${PROJECT_NAME}"
++  ARCHIVE       DESTINATION ${CMAKE_INSTALL_LIBDIR}     COMPONENT "${PROJECT_NAME}-dev"
++  INCLUDES      DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
++)
++install(EXPORT "${PROJECT_NAME}"
++  NAMESPACE "adobe::"
++  FILE "${PROJECT_NAME}Targets.cmake"
++  DESTINATION "${PROJECT_NAME}_INSTALL_PKGDIR"
++  COMPONENT   "${PROJECT_NAME}-dev"
++)
+diff --git a/source/any_regular.cpp b/source/any_regular.cpp
+index 7b41c21..2868901 100644
+--- a/source/any_regular.cpp
++++ b/source/any_regular.cpp
+@@ -12,7 +12,7 @@
+ #include <cassert>
+ #include <string>
+ 
+-#include <double-conversion/src/double-conversion.h>
++#include <double-conversion/double-conversion.h>
+ 
+ #include <adobe/algorithm/sorted.hpp>
+ #include <adobe/algorithm/lower_bound.hpp>

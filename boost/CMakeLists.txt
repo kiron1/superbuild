@@ -20,7 +20,7 @@ ExternalProject_Add(boost
   CMAKE_GENERATOR ${CMAKE_GENERATOR}
   CMAKE_GENERATOR_PLATFORM ${CMAKE_GENERATOR_PLATFORM}
   CMAKE_GENERATOR_TOOLSET ${CMAKE_GENERATOR_TOOLSET}
-  CMAKE_ARGS ${_cmake_args} -DBoost_WITH_LIBRARIES=filesystem,program_options,system,test
+  CMAKE_ARGS ${_cmake_args} -DBoost_WITH_LIBRARIES=filesystem,program_options,system,thread,test
   TEST_COMMAND ""
 )
 copy_files(boost

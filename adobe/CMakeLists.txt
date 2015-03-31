@@ -4,17 +4,22 @@
 # http://www.boost.org/LICENSE_1_0.txt
 #=============================================================================
 
-ExternalProject_Add(adobe-source-libraries
-  DEPENDS boost
-  GIT_REPOSITORY "https://github.com/stlab/adobe_source_libraries"
-  GIT_TAG "3d845219da423f7278bbef07b0ccc0322cd17304"
+ExternalProject_Add(double-conversion
+  GIT_REPOSITORY "https://github.com/stlab/double-conversion"
   CMAKE_GENERATOR ${CMAKE_GENERATOR}
   CMAKE_GENERATOR_PLATFORM ${CMAKE_GENERATOR_PLATFORM}
   CMAKE_GENERATOR_TOOLSET ${CMAKE_GENERATOR_TOOLSET}
   CMAKE_ARGS ${_cmake_args}
   TEST_COMMAND ""
 )
-copy_files(adobe-source-libraries
-  CMakeLists.txt
-  AdobeSourceLibrariesConfig.cmake.in
+
+ExternalProject_Add(adobe-source-libraries
+  DEPENDS boost double-conversion
+  GIT_REPOSITORY "https://github.com/stlab/adobe_source_libraries"
+  CMAKE_GENERATOR ${CMAKE_GENERATOR}
+  CMAKE_GENERATOR_PLATFORM ${CMAKE_GENERATOR_PLATFORM}
+  CMAKE_GENERATOR_TOOLSET ${CMAKE_GENERATOR_TOOLSET}
+  CMAKE_ARGS ${_cmake_args}
+  PATCH_COMMAND ${GIT_EXECUTABLE} apply "${CMAKE_CURRENT_SOURCE_DIR}/files/stlab-asl-cmake.patch"
+  TEST_COMMAND ""
 )
